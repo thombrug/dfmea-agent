@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DFMEA Report — {{ system_name }}</title>
+  <style>
+    :root {
+      --color-bg: #0f1117;
+      --color-surface: #1a1d2e;
+      --color-surface-2: #242740;
+      --color-border: #2e3147;
+      --color-text: #e2e8f0;
+      --color-text-muted: #94a3b8;
+      --color-accent: #6366f1;
+      --color-accent-light: #818cf8;
+
+      --color-critical: #ef4444;
+      --color-critical-bg: rgba(239, 68, 68, 0.12);
+      --color-critical-border: rgba(239, 68, 68, 0.3);
+
+      --color-high: #f97316;
+      --color-high-bg: rgba(249, 115, 22, 0.12);
+      --color-high-border: rgba(249, 115, 22, 0.3);
+
+      --color-medium: #eab308;
+      --color-medium-bg: rgba(234, 179, 8, 0.12);
+      --color-medium-border: rgba(234, 179, 8, 0.3);
+
+      --color-low: #22c55e;
+      --color-low-bg: rgba(34, 197, 94, 0.12);
+      --color-low-border: rgba(34, 197, 94, 0.3);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+      padding: 2rem 1.5rem;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    /* ── Header ─────────────────────────────────────────────── */
+    .header {
+      max-width: 1400px;
+      margin: 0 auto 2rem;
+      padding: 2rem 2.5rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      border-left: 4px solid var(--color-accent);
+    }
+
+    .header-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .header-title {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--color-text);
+      letter-spacing: -0.02em;
+    }
+
+    .header-subtitle {
+      font-size: 0.9rem;
+      color: var(--color-text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .header-badges {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .badge-scope {
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: var(--color-accent-light);
+    }
+
+    .badge-doi {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.25);
+      color: var(--color-accent-light);
+      text-transform: none;
+      font-weight: 500;
+      font-size: 0.72rem;
+    }
+
+    .badge-doi a { color: inherit; text-decoration: none; }
+    .badge-doi a:hover { text-decoration: underline; }
+
+    .header-meta {
+      margin-top: 1rem;
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+    }
+
+    .header-meta span { display: flex; gap: 0.4rem; align-items: center; }
+
+    /* ── Summary Cards ───────────────────────────────────────── */
+    .summary-grid {
+      max-width: 1400px;
+      margin: 0 auto 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 1rem;
+    }
+
+    .summary-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      text-align: center;
+    }
+
+    .summary-card.critical { border-color: var(--color-critical-border); background: var(--color-critical-bg); }
+    .summary-card.high     { border-color: var(--color-high-border);     background: var(--color-high-bg); }
+    .summary-card.medium   { border-color: var(--color-medium-border);   background: var(--color-medium-bg); }
+    .summary-card.low      { border-color: var(--color-low-border);      background: var(--color-low-bg); }
+
+    .summary-card-value {
+      font-size: 2rem;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 0.35rem;
+    }
+
+    .summary-card.critical .summary-card-value { color: var(--color-critical); }
+    .summary-card.high     .summary-card-value { color: var(--color-high); }
+    .summary-card.medium   .summary-card-value { color: var(--color-medium); }
+    .summary-card.low      .summary-card-value { color: var(--color-low); }
+
+    .summary-card-label {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--color-text-muted);
+      font-weight: 600;
+    }
+
+    /* ── Filters ─────────────────────────────────────────────── */
+    .controls {
+      max-width: 1400px;
+      margin: 0 auto 1rem;
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .controls-label {
+      font-size: 0.8rem;
+      color: var(--color-text-muted);
+      font-weight: 600;
+      margin-right: 0.25rem;
+    }
+
+    .filter-btn {
+      padding: 0.35rem 0.9rem;
+      border-radius: 20px;
+      border: 1px solid var(--color-border);
+      background: var(--color-surface);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      transition: all 0.15s;
+    }
+
+    .filter-btn:hover { border-color: var(--color-accent); color: var(--color-accent-light); }
+    .filter-btn.active { background: var(--color-accent); border-color: var(--color-accent); color: white; }
+    .filter-btn.critical.active { background: var(--color-critical); border-color: var(--color-critical); }
+    .filter-btn.high.active     { background: var(--color-high); border-color: var(--color-high); }
+    .filter-btn.medium.active   { background: var(--color-medium); border-color: var(--color-medium); color: #1a1a1a; }
+    .filter-btn.low.active      { background: var(--color-low); border-color: var(--color-low); color: #1a1a1a; }
+
+    /* ── Table ───────────────────────────────────────────────── */
+    .table-wrap {
+      max-width: 1400px;
+      margin: 0 auto;
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid var(--color-border);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 900px;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--color-surface-2);
+    }
+
+    th {
+      padding: 0.9rem 1rem;
+      text-align: left;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-muted);
+      font-weight: 700;
+      border-bottom: 1px solid var(--color-border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th:hover { color: var(--color-text); }
+    th.sorted-asc::after  { content: " ▲"; opacity: 0.7; }
+    th.sorted-desc::after { content: " ▼"; opacity: 0.7; }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--color-border);
+      vertical-align: top;
+      font-size: 0.82rem;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tr.risk-critical { background: var(--color-critical-bg); }
+    tr.risk-high     { background: var(--color-high-bg); }
+    tr.risk-medium   { background: var(--color-medium-bg); }
+    tr.risk-low      { background: var(--color-low-bg); }
+
+    tr:hover td { filter: brightness(1.15); }
+
+    .entry-id {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      white-space: nowrap;
+    }
+
+    .component-name {
+      font-weight: 600;
+      color: var(--color-text);
+    }
+
+    .function-text {
+      font-size: 0.75rem;
+      color: var(--color-text-muted);
+      margin-top: 0.2rem;
+    }
+
+    .rating-cell {
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .rpn-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 52px;
+      padding: 0.3rem 0.6rem;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      font-family: "SF Mono", "Fira Code", monospace;
+    }
+
+    .rpn-critical { background: var(--color-critical-bg); color: var(--color-critical); border: 1px solid var(--color-critical-border); }
+    .rpn-high     { background: var(--color-high-bg);     color: var(--color-high);     border: 1px solid var(--color-high-border); }
+    .rpn-medium   { background: var(--color-medium-bg);   color: var(--color-medium);   border: 1px solid var(--color-medium-border); }
+    .rpn-low      { background: var(--color-low-bg);      color: var(--color-low);      border: 1px solid var(--color-low-border); }
+
+    .risk-chip {
+      display: inline-flex;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .chip-critical { background: var(--color-critical-bg); color: var(--color-critical); border: 1px solid var(--color-critical-border); }
+    .chip-high     { background: var(--color-high-bg);     color: var(--color-high);     border: 1px solid var(--color-high-border); }
+    .chip-medium   { background: var(--color-medium-bg);   color: var(--color-medium);   border: 1px solid var(--color-medium-border); }
+    .chip-low      { background: var(--color-low-bg);      color: var(--color-low);      border: 1px solid var(--color-low-border); }
+
+    .action-text {
+      font-size: 0.78rem;
+      color: var(--color-text-muted);
+      line-height: 1.5;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ── Footer ──────────────────────────────────────────────── */
+    .footer {
+      max-width: 1400px;
+      margin: 2rem auto 0;
+      font-size: 0.72rem;
+      color: var(--color-text-muted);
+      text-align: center;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .footer a { color: var(--color-accent-light); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    /* ── Print ───────────────────────────────────────────────── */
+    @media print {
+      body { background: white; color: black; }
+      .controls { display: none; }
+      .table-wrap { border: 1px solid #ccc; }
+      th { background: #f0f0f0; color: #333; }
+      :root {
+        --color-bg: white;
+        --color-surface: white;
+        --color-surface-2: #f8f8f8;
+        --color-border: #ddd;
+        --color-text: #111;
+        --color-text-muted: #666;
+      }
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 1rem; }
+      .header { padding: 1.5rem; }
+      .header-title { font-size: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="header-title">{{ system_name }}</div>
+        <div class="header-subtitle">Design Failure Mode &amp; Effects Analysis (DFMEA)</div>
+      </div>
+      <div class="header-badges">
+        <span class="badge badge-scope">{{ scope | upper }} FMEA</span>
+        <span class="badge badge-doi">
+          📄 <a href="https://doi.org/{{ doi_reference }}" target="_blank" rel="noopener">
+            doi:{{ doi_reference }}
+          </a>
+        </span>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span>📅 Analysis Date: <strong>{{ analysis_date }}</strong></span>
+      <span>🔢 Entries: <strong>{{ total_entries }}</strong></span>
+      <span>📊 Max RPN: <strong>{{ max_rpn }}</strong></span>
+      <span>📈 Avg RPN: <strong>{{ avg_rpn }}</strong></span>
+      <span>⚙️ Methodology: IEC 60812:2018 + INCOSE V-Model</span>
+    </div>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-value" style="color: var(--color-text)">{{ total_entries }}</div>
+      <div class="summary-card-label">Total Entries</div>
+    </div>
+    <div class="summary-card critical">
+      <div class="summary-card-value">{{ critical_count }}</div>
+      <div class="summary-card-label">Critical</div>
+    </div>
+    <div class="summary-card high">
+      <div class="summary-card-value">{{ high_count }}</div>
+      <div class="summary-card-label">High</div>
+    </div>
+    <div class="summary-card medium">
+      <div class="summary-card-value">{{ medium_count }}</div>
+      <div class="summary-card-label">Medium</div>
+    </div>
+    <div class="summary-card low">
+      <div class="summary-card-value">{{ low_count }}</div>
+      <div class="summary-card-label">Low</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-value" style="color: var(--color-accent-light)">{{ max_rpn }}</div>
+      <div class="summary-card-label">Max RPN</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-value" style="color: var(--color-text-muted)">{{ avg_rpn }}</div>
+      <div class="summary-card-label">Avg RPN</div>
+    </div>
+  </div>
+
+  <!-- Filter Controls -->
+  <div class="controls">
+    <span class="controls-label">Filter:</span>
+    <button class="filter-btn active" data-filter="all" onclick="filterRows('all', this)">All</button>
+    <button class="filter-btn critical" data-filter="critical" onclick="filterRows('critical', this)">Critical</button>
+    <button class="filter-btn high" data-filter="high" onclick="filterRows('high', this)">High</button>
+    <button class="filter-btn medium" data-filter="medium" onclick="filterRows('medium', this)">Medium</button>
+    <button class="filter-btn low" data-filter="low" onclick="filterRows('low', this)">Low</button>
+  </div>
+
+  <!-- FMEA Matrix Table -->
+  <div class="table-wrap">
+    <table id="fmea-table">
+      <thead>
+        <tr>
+          <th onclick="sortTable(0)">ID</th>
+          <th onclick="sortTable(1)">Component / Function</th>
+          <th onclick="sortTable(2)">Failure Mode</th>
+          <th onclick="sortTable(3)">Effect</th>
+          <th onclick="sortTable(4)">Cause</th>
+          <th onclick="sortTable(5)" style="text-align:center">S</th>
+          <th onclick="sortTable(6)" style="text-align:center">O</th>
+          <th onclick="sortTable(7)" style="text-align:center">D</th>
+          <th onclick="sortTable(8)" style="text-align:center">RPN</th>
+          <th onclick="sortTable(9)">Risk</th>
+          <th>Recommended Action</th>
+        </tr>
+      </thead>
+      <tbody id="fmea-body">
+        {% for entry in entries %}
+        <tr class="risk-{{ entry.risk_level }}" data-risk="{{ entry.risk_level }}">
+          <td class="entry-id">{{ entry.id }}</td>
+          <td>
+            <div class="component-name">{{ entry.component }}</div>
+            <div class="function-text">{{ entry.function }}</div>
+          </td>
+          <td>{{ entry.failure_mode }}</td>
+          <td>{{ entry.failure_effect }}</td>
+          <td>{{ entry.failure_cause }}</td>
+          <td class="rating-cell">{{ entry.severity }}</td>
+          <td class="rating-cell">{{ entry.occurrence }}</td>
+          <td class="rating-cell">{{ entry.detection }}</td>
+          <td style="text-align:center">
+            <span class="rpn-badge rpn-{{ entry.risk_level }}">{{ entry.rpn }}</span>
+          </td>
+          <td>
+            <span class="risk-chip chip-{{ entry.risk_level }}">{{ entry.risk_level }}</span>
+          </td>
+          <td class="action-text">{{ entry.recommended_action }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Generated by <strong>DFMEA Agent</strong> · Methodology: IEC 60812:2018 · INCOSE Systems Engineering Handbook ·
+    <a href="https://doi.org/{{ doi_reference }}" target="_blank" rel="noopener">doi:{{ doi_reference }}</a> ·
+    Powered by <a href="https://www.anthropic.com" target="_blank" rel="noopener">Claude claude-opus-4-6</a>
+  </div>
+
+  <script>
+    // ── Filter by risk level ─────────────────────────────────
+    function filterRows(level, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('#fmea-body tr').forEach(row => {
+        if (level === 'all' || row.dataset.risk === level) {
+          row.classList.remove('hidden');
+        } else {
+          row.classList.add('hidden');
+        }
+      });
+    }
+
+    // ── Sort table columns ────────────────────────────────────
+    let sortCol = -1;
+    let sortAsc = true;
+
+    function sortTable(colIndex) {
+      const table = document.getElementById('fmea-table');
+      const headers = table.querySelectorAll('th');
+      const tbody = document.getElementById('fmea-body');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+
+      if (sortCol === colIndex) {
+        sortAsc = !sortAsc;
+      } else {
+        sortAsc = true;
+        sortCol = colIndex;
+      }
+
+      headers.forEach((h, i) => {
+        h.classList.remove('sorted-asc', 'sorted-desc');
+        if (i === colIndex) {
+          h.classList.add(sortAsc ? 'sorted-asc' : 'sorted-desc');
+        }
+      });
+
+      rows.sort((a, b) => {
+        const aText = a.cells[colIndex]?.textContent?.trim() ?? '';
+        const bText = b.cells[colIndex]?.textContent?.trim() ?? '';
+        const aNum = parseFloat(aText);
+        const bNum = parseFloat(bText);
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          return sortAsc ? aNum - bNum : bNum - aNum;
+        }
+        return sortAsc ? aText.localeCompare(bText) : bText.localeCompare(aText);
+      });
+
+      rows.forEach(row => tbody.appendChild(row));
+    }
+  </script>
+</body>
+</html>

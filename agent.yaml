@@ -1,0 +1,169 @@
+name: dfmea-agent
+title: Design FMEA Agent
+description: >
+  Executes a Design Failure Mode and Effects Analysis (DFMEA) for engineering
+  systems. Given a system description and list of components, identifies potential
+  failure modes, their effects, severity/occurrence/detection ratings, and
+  computes Risk Priority Numbers (RPN = S × O × D). Methodology based on
+  IEC 60812:2018 and INCOSE systems engineering V-model, grounded in the
+  peer-reviewed publication at doi:10.3390/su12010077.
+version: 1.0.0
+doi: 10.3390/su12010077
+fields: ["2.3", "2.11"]
+
+input:
+  type: object
+  properties:
+    system_name:
+      type: string
+      description: Name of the system or subsystem being analyzed (e.g., "Automotive Brake System")
+    system_description:
+      type: string
+      description: Brief description of the system's intended function and operating environment
+    components:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+            description: Component name (e.g., "Brake Caliper")
+          function:
+            type: string
+            description: Component intended function (e.g., "Apply clamping force to brake disc")
+        required: [name, function]
+      description: List of components/subsystems to analyze for failure modes
+    scope:
+      type: string
+      enum: [design, process, system]
+      description: "FMEA scope type: design (DFMEA), process (PFMEA), or system (SFMEA)"
+  required: [system_name, system_description, components]
+
+output:
+  type: object
+  properties:
+    system_name:
+      type: string
+      description: System name from input
+    analysis_date:
+      type: string
+      description: ISO 8601 date of analysis (YYYY-MM-DD)
+    doi_reference:
+      type: string
+      description: DOI of the methodology source publication
+    scope:
+      type: string
+      description: FMEA scope used for this analysis
+    entries:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Unique entry identifier (e.g., "DFMEA-001")
+          component:
+            type: string
+            description: Component name
+          function:
+            type: string
+            description: Component intended function
+          failure_mode:
+            type: string
+            description: How the component could fail to perform its function
+          failure_effect:
+            type: string
+            description: Effect of the failure on the system and/or end user
+          failure_cause:
+            type: string
+            description: Root cause or mechanism of the failure
+          severity:
+            type: integer
+            description: "Severity rating 1-10 (1=no effect, 10=catastrophic/safety-critical)"
+          occurrence:
+            type: integer
+            description: "Occurrence rating 1-10 (1=remote/unlikely, 10=almost certain)"
+          detection:
+            type: integer
+            description: "Detection rating 1-10 (1=almost certain to detect, 10=undetectable)"
+          rpn:
+            type: integer
+            description: "Risk Priority Number = Severity × Occurrence × Detection (1-1000)"
+          recommended_action:
+            type: string
+            description: Recommended corrective or preventive action
+          risk_level:
+            type: string
+            enum: [low, medium, high, critical]
+            description: "Risk classification: low (<100), medium (100-199), high (200-399), critical (≥400)"
+    summary:
+      type: object
+      properties:
+        total_entries:
+          type: integer
+          description: Total number of FMEA entries generated
+        critical_count:
+          type: integer
+          description: Number of entries with risk_level=critical (RPN ≥ 400)
+        high_count:
+          type: integer
+          description: Number of entries with risk_level=high (RPN 200-399)
+        medium_count:
+          type: integer
+          description: Number of entries with risk_level=medium (RPN 100-199)
+        low_count:
+          type: integer
+          description: Number of entries with risk_level=low (RPN < 100)
+        max_rpn:
+          type: integer
+          description: Highest RPN value found
+        avg_rpn:
+          type: number
+          description: Average RPN across all entries
+    html_report:
+      type: string
+      description: Self-contained HTML FMEA matrix report (suitable for saving to .html file)
+  required: [system_name, analysis_date, doi_reference, scope, entries, summary]
+
+tools:
+  - name: run_dfmea
+    description: >
+      Executes a full Design Failure Mode and Effects Analysis (DFMEA) on the
+      provided engineering system. Analyzes each component for potential failure
+      modes, rates them on Severity, Occurrence, and Detection scales (1-10),
+      computes Risk Priority Numbers (RPN), classifies risk levels, and generates
+      an HTML matrix report. Based on IEC 60812:2018 methodology.
+    input_schema:
+      type: object
+      properties:
+        system_name:
+          type: string
+          description: Name of the system or subsystem being analyzed
+        system_description:
+          type: string
+          description: Brief description of the system's intended function
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              function:
+                type: string
+            required: [name, function]
+          description: List of components to analyze
+        scope:
+          type: string
+          enum: [design, process, system]
+          description: FMEA scope (defaults to design)
+      required: [system_name, system_description, components]
+
+dependencies:
+  python:
+    - anthropic>=0.40.0
+    - pydantic>=2.0.0
+    - jinja2>=3.1.0
+  npm: []
+
+entrypoint: src/main.py
