@@ -83,6 +83,7 @@ output:
       description: FMEA scope used for this analysis
     entries:
       type: array
+      description: List of FMEA entries, one per identified failure mode
       items:
         type: object
         properties:
@@ -125,6 +126,7 @@ output:
             description: "Risk classification: low (<100), medium (100-199), high (200-399), critical (≥400)"
     summary:
       type: object
+      description: Aggregate statistics across all FMEA entries
       properties:
         total_entries:
           type: integer
