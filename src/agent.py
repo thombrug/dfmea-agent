@@ -1,7 +1,7 @@
 """
 DFMEA Agent Core — uses the Anthropic Python SDK to execute the FMEA analysis.
 
-The agent sends the system description and components to Claude claude-3-5-haiku,
+The agent sends the system description and components to Claude claude-haiku-4-5,
 which returns a structured JSON array of FMEA entries validated against the
 Pydantic schema defined in fmea_schema.py.
 """
@@ -26,7 +26,7 @@ from prompts import SYSTEM_PROMPT
 
 def run_dfmea_agent(input_data: FMEAInput) -> FMEAOutput:
     """
-    Execute a Design FMEA using Claude claude-opus-4-6.
+    Execute a Design FMEA using Claude claude-haiku-4-5.
 
     Args:
         input_data: Validated FMEAInput with system info and components.
