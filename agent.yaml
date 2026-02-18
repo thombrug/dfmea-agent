@@ -8,7 +8,34 @@ description: >
   IEC 60812:2018 and INCOSE systems engineering V-model, grounded in the
   peer-reviewed publication at doi:10.3390/su12010077.
 version: 1.0.0
-doi: 10.3390/su12010077
+license: MIT
+tags: [fmea, reliability, systems-engineering, iec-60812, risk-analysis]
+
+references:
+  - type: doi
+    id: 10.3390/su12010077
+    description: "Failure Mode and Effects Analysis (FMEA) in the Context of Risk Evaluation in Lean Manufacturing and Industry 4.0"
+  - type: standard
+    id: IEC 60812:2018
+    description: "Analysis techniques for system reliability — Procedure for failure mode and effects analysis (FMEA)"
+  - type: standard
+    id: INCOSE SE Handbook 4th Ed. §9.4
+    description: "INCOSE Systems Engineering Handbook, 4th Edition (2015), §9.4 Risk Analysis"
+
+files:
+  - path: src/agent.py
+    description: Core agent logic — calls Claude claude-haiku-4-5 and validates structured FMEA output
+  - path: src/fmea_schema.py
+    description: Pydantic models for FMEAInput, FMEAOutput, FMEAEntry, FMEASummary
+  - path: src/prompts.py
+    description: System prompt embedding IEC 60812:2018 rating scales and output format rules
+  - path: src/main.py
+    description: CLI entrypoint — reads JSON from stdin or file, writes output JSON and HTML report
+  - path: src/ui/renderer.py
+    description: Jinja2-based HTML report renderer for the FMEA matrix
+  - path: src/ui/fmea_matrix.html
+    description: Jinja2 HTML template for the FMEA matrix report
+
 fields: ["2.3", "2.11"]
 
 input:
