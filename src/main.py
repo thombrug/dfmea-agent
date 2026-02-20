@@ -6,6 +6,7 @@ Usage:
   python src/main.py                      # Run built-in example (automotive brake system)
   python src/main.py --example            # Same as above
   python src/main.py input.json           # Run with custom input JSON file
+  echo '{"..."}' | python src/main.py     # Read JSON from stdin (spawn_protocol convention)
   python src/main.py --output-dir ./out   # Write outputs to a specific directory
   python src/main.py --json-only          # Print JSON output only, no HTML report
 
@@ -112,6 +113,11 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    # ── Detect programmatic (pipe) mode ───────────────────────────────────────
+    # When stdin is piped (not a TTY), we're being invoked by the CLI runner
+    # or another program. Default to lean output: no file saves, JSON-only.
+    pipe_mode = not sys.stdin.isatty()
+
     # ── Check API key ──────────────────────────────────────────────────────────
     if not os.environ.get("ANTHROPIC_API_KEY"):
         print(
@@ -123,6 +129,7 @@ def main() -> None:
 
     # ── Load input ─────────────────────────────────────────────────────────────
     if args.input_file and not args.example:
+        # Priority 1: explicit file argument
         input_path = Path(args.input_file)
         if not input_path.exists():
             print(f"ERROR: Input file not found: {input_path}", file=sys.stderr)
@@ -131,7 +138,17 @@ def main() -> None:
             raw = json.load(f)
         fmea_input = FMEAInput(**raw)
         print(f"[DFMEA Agent] Loaded input from {input_path}", file=sys.stderr)
+    elif not args.example and pipe_mode:
+        # Priority 2: stdin-json convention (spawn_protocol)
+        try:
+            raw = json.loads(sys.stdin.read())
+        except json.JSONDecodeError as e:
+            print(f"ERROR: Invalid JSON on stdin: {e}", file=sys.stderr)
+            sys.exit(1)
+        fmea_input = FMEAInput(**raw)
+        print("[DFMEA Agent] Loaded input from stdin", file=sys.stderr)
     else:
+        # Priority 3: built-in example (interactive / --example)
         fmea_input = EXAMPLE_INPUT
         print("[DFMEA Agent] Using built-in example: Automotive Disc Brake System", file=sys.stderr)
 
@@ -139,20 +156,24 @@ def main() -> None:
     result = run_dfmea_agent(fmea_input)
 
     # ── Render HTML report ─────────────────────────────────────────────────────
-    if not args.json_only:
+    # In pipe mode, skip HTML rendering unless explicitly requested
+    skip_html = args.json_only or (pipe_mode and not args.output_dir != ".")
+    if not skip_html:
         result.html_report = render_html_report(result)
         print("[DFMEA Agent] HTML report rendered.", file=sys.stderr)
 
     # ── Output JSON to stdout ──────────────────────────────────────────────────
     output_dict = result.model_dump()
-    if args.json_only or args.no_save:
-        # Exclude potentially huge html_report from stdout when json-only
+    if skip_html or args.no_save:
+        # Exclude potentially huge html_report from stdout
         output_dict.pop("html_report", None)
 
     print(json.dumps(output_dict, indent=2))
 
     # ── Save output files ──────────────────────────────────────────────────────
-    if not args.no_save:
+    # In pipe mode, default to no-save unless explicit --output-dir is given
+    should_save = not args.no_save and not (pipe_mode and args.output_dir == ".")
+    if should_save:
         output_dir = Path(args.output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
