@@ -38,6 +38,36 @@ files:
 
 fields: ["2.3", "2.11"]
 
+runtime:
+  env:
+    - name: ANTHROPIC_API_KEY
+      required: true
+      description: "Anthropic API key for Claude inference"
+  capacity:
+    tokens_per_input: 2000
+    recommended_max_tokens: 16000
+    max_inputs_tested: 6
+    typical_latency_seconds: 30
+  conventions:
+    - stdin-json
+    - stdout-json
+    - exit-codes
+  test_command: "python src/main.py --example --json-only"
+
+examples:
+  - label: "Automotive Brake System"
+    input:
+      system_name: "Automotive Disc Brake System"
+      system_description: "Hydraulic disc brake system for passenger vehicles, converting brake pedal force into clamping force on the brake disc to decelerate the vehicle."
+      components:
+        - name: "Brake Caliper"
+          function: "Apply clamping force to brake disc via hydraulic pressure"
+        - name: "Brake Pad"
+          function: "Create friction against brake disc to convert kinetic energy to heat"
+        - name: "Brake Disc (Rotor)"
+          function: "Provide friction surface and dissipate heat generated during braking"
+      scope: design
+
 input:
   type: object
   properties:
